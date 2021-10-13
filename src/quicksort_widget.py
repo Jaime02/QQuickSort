@@ -1,7 +1,7 @@
 from random import shuffle
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox, QSizePolicy
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox
 
 from .widgets import (
     Element,
@@ -65,8 +65,8 @@ class QuicksortWidget(QWidget):
         self.central_layout.addLayout(self.layout_pivot_marker)
 
         self.layout_bars = QHBoxLayout()
-        self.layout_green_marker = DebugLayout("GM")
-        self.layout_red_marker = DebugLayout("RM")
+        self.layout_green_marker = QHBoxLayout()
+        self.layout_red_marker = QHBoxLayout()
         self.central_layout.addLayout(self.layout_bars, stretch=1)
         self.central_layout.addLayout(self.layout_green_marker)
         self.central_layout.addLayout(self.layout_red_marker)
@@ -87,7 +87,7 @@ class QuicksortWidget(QWidget):
         self.layout_pivot_marker.removeWidget(ph.widget())
         ph.widget().deleteLater()
         self.layout_pivot_marker.insertWidget(
-            self.pivot_marker.position, self.pivot_marker
+            self.pivot_marker.position, self.pivot_marker, 1
         )
 
         self.log(f"Pivot: {self.layout_bars.itemAt(step.index).widget().value}")
@@ -108,12 +108,13 @@ class QuicksortWidget(QWidget):
 
         v = [element.value for element in self.elements]
         self.values = [element.value for element in self.elements]
-        self.values = self.quicksort(v)
+        self.values = self.quicksort(v, 0, len(v)-1)
         # from pprint import pprint
         # pprint(self.steps)
         self.execute_next_step()
 
-    def swap_widgets(self, layout: QHBoxLayout | QVBoxLayout, w1, w2, log=False):
+    @staticmethod
+    def swap_widgets(layout: QHBoxLayout | QVBoxLayout, w1, w2, log=False):
         if w1 == w2:
             return
 
@@ -124,38 +125,29 @@ class QuicksortWidget(QWidget):
             print("i start:", layout.indexOf(w1), layout.indexOf(w2))
             print("w pos:", w1.position, w2.position)
 
-        assert layout.count() == self.number_of_elements
-
         w1.position, w2.position = w2.position, w1.position
 
-        layout.removeWidget(w1)
-        layout.removeWidget(w2)
+        widgets = []
+        while layout.count():
+            w = layout.takeAt(0).widget()
+            widgets.append(w)
 
-        assert layout.count() == self.number_of_elements - 2
-
-        layout.insertWidget(w1.position, w1)
-        layout.insertWidget(w2.position, w2)
-
-        assert layout.count() == self.number_of_elements
-
-        if log:
-            print("i end:", layout.indexOf(w1), layout.indexOf(w2))
-            print()
+        widgets.sort(key=lambda w: w.position)
+        for w in widgets:
+            layout.addWidget(w, 1)
 
     def log(self, text: str):
         self.main_window.log.add_text(text)
 
     def pick_green_red(self, step: PickGreenRed):
         green = self.layout_green_marker.takeAt(step.green_index).widget()
-        self.layout_green_marker.insertWidget(step.green_index, self.green_marker)
+        self.layout_green_marker.insertWidget(step.green_index, self.green_marker, 1)
         green.deleteLater()
 
         red = self.layout_red_marker.takeAt(step.red_index).widget()
-        self.layout_red_marker.insertWidget(step.red_index, self.red_marker)
+        self.layout_red_marker.insertWidget(step.red_index, self.red_marker, 1)
         red.deleteLater()
 
-        assert self.layout_green_marker.count() == self.number_of_elements
-        assert self.layout_red_marker.count() == self.number_of_elements
         self.log(f"Green: {step.green_value} Red: {step.red_value}")
 
     def swap_markers(self, step: PickGreenRed):
@@ -164,14 +156,12 @@ class QuicksortWidget(QWidget):
             self.layout_green_marker,
             self.green_marker,
             self.layout_green_marker.itemAt(step.green_index).widget(),
-            log=True
         )
 
         self.swap_widgets(
             self.layout_red_marker,
             self.red_marker,
             self.layout_red_marker.itemAt(step.red_index).widget(),
-            log=True
         )
         self.log(f"Green: {step.green_value} Red: {step.red_value}")
 
@@ -185,7 +175,7 @@ class QuicksortWidget(QWidget):
                 self.green_marker,
                 self.layout_green_marker.itemAt(self.green_marker.position - 1).widget()
             )
-            assert self.layout_green_marker.count() == self.number_of_elements
+
             self.log("Decrease green marker")
         else:
             print("Green underflow")
@@ -198,7 +188,6 @@ class QuicksortWidget(QWidget):
                 self.layout_red_marker.itemAt(self.red_marker.position - 1).widget(),
             )
             self.log("Decrease red marker")
-            assert self.layout_red_marker.count() == self.number_of_elements
         else:
             print("Red underflow")
 
@@ -255,24 +244,23 @@ class QuicksortWidget(QWidget):
                 QMessageBox.about(self, "End of quicksort", "All element are sorted")
         self.main_window.scroll_area_log.move_bottom()
 
-    def quicksort(self, v: list):
-        if len(v) == 1:
-            return v
-        elif len(v) == 0:
+    def quicksort(self, v: list, start: int, end: int):
+        if start == end:
             return []
-        # print("Args:", v)
+        elif start == end+1:
+            return v
 
-        pivot_value = v[0]
+        pivot_value = v[start]
         pivot_index = self.values.index(pivot_value)
 
         self.steps.append(Pivot(pivot_index, pivot_value))
 
-        green = len(v) - 1
-        red = len(v) - 1
+        green = end
+        red = end
 
-        self.steps.append(PickGreenRed(self.values.index(v[green]), v[green], self.values.index(v[red]), v[red]))
+        self.steps.append(PickGreenRed(green, v[green], red, v[red]))
 
-        while green:
+        while green > start:
             if pivot_value < v[green]:
                 self.steps.append(
                     GreenGreaterPivot(green, v[green], pivot_index, pivot_value)
@@ -292,15 +280,10 @@ class QuicksortWidget(QWidget):
             self.steps.append(DecreaseGreen())
 
         self.steps.append(SwapPivotRed(pivot_index, pivot_value, red, v[red]))
-        v[0], v[red] = v[red], v[0]
+        v[start], v[red] = v[red], v[start]
 
-        result = []
-        left = self.quicksort(v[:red])
-        right = self.quicksort(v[red + 1:])
-        result.extend(left)
-        result.append(pivot_value)
-        result.extend(right)
-        return result
+        self.quicksort(v, start, red-1)
+        self.quicksort(v, red+1, end)
 
     @staticmethod
     def generate_gradient_rgbs(num_buckets):
@@ -332,7 +315,7 @@ class QuicksortWidget(QWidget):
     def fill_layout(layout, widget, count: int):
         for i in range(count):
             w = widget(i)
-            layout.addWidget(w)
+            layout.addWidget(w, 1)
 
     @staticmethod
     def empty_layout(layout):
@@ -370,41 +353,10 @@ class QuicksortWidget(QWidget):
         # self.update_red_marker()
 
         for element in self.elements:
-            self.layout_bars.addWidget(element)
+            self.layout_bars.addWidget(element, 1)
             self.layout_bars.setAlignment(element, Qt.AlignBottom)
 
         self.colors = self.generate_gradient_rgbs(self.number_of_elements)
-
-    def update_pivot(self):
-        for element in [
-            self.layout_pivot.itemAt(i).widget()
-            for i in range(self.layout_pivot.count())
-        ]:
-            self.layout_pivot.removeWidget(element)
-            self.layout_pivot.insertWidget(element.position, element)
-            self.layout_pivot.setAlignment(element, Qt.AlignBottom)
-
-    def update_green_marker(self):
-        widgets = []
-        for _ in range(self.layout_green_marker.count()):
-            widgets.append(self.layout_green_marker.takeAt(0).widget())
-
-        assert self.layout_green_marker.count() == 0
-        
-        for element in sorted(widgets, key=lambda elem: elem.position):
-            self.layout_green_marker.addWidget(element)
-            self.layout_green_marker.setAlignment(element, Qt.AlignBottom)
-
-    def update_red_marker(self):
-        widgets = []
-        for _ in range(self.layout_red_marker.count()):
-            widgets.append(self.layout_red_marker.takeAt(0).widget())
-
-        assert self.layout_red_marker.count() == 0
-
-        for element in sorted(widgets, key=lambda elem: elem.position):
-            self.layout_red_marker.addWidget(element)
-            self.layout_red_marker.setAlignment(element, Qt.AlignBottom)
 
     def shuffle(self):
         self.main_window.log.clear()
@@ -421,6 +373,6 @@ class QuicksortWidget(QWidget):
         self.elements.sort(key=lambda x: x.position)
 
         for element in self.elements:
-            self.layout_bars.addWidget(element, 0, Qt.AlignBottom)
+            self.layout_bars.addWidget(element, 1, Qt.AlignBottom)
 
         self.main_window.log.add_text(f"Suffled {self.number_of_elements} elements")
