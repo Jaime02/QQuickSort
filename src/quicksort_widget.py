@@ -24,7 +24,7 @@ from .widgets import (
 class DebugLayout(QHBoxLayout):
     def __init__(self, name):
         QHBoxLayout.__init__(self)
-        self.log = True
+        self.log = False
         self.name = name
 
     def addWidget(self, widget):
@@ -113,11 +113,17 @@ class QuicksortWidget(QWidget):
         # pprint(self.steps)
         self.execute_next_step()
 
-    def swap_widgets(self, layout, w1, w2, log=False):
-        if log:
-            print(w1, "<->", w2)
+    def swap_widgets(self, layout: QHBoxLayout | QVBoxLayout, w1, w2, log=False):
         if w1 == w2:
             return
+
+        if log:
+            # print("Layout ", layout, ":")
+            # for i in range(layout.count()):
+            #     print(layout.itemAt(i).widget())
+            print("i start:", layout.indexOf(w1), layout.indexOf(w2))
+            print("w pos:", w1.position, w2.position)
+
         assert layout.count() == self.number_of_elements
 
         w1.position, w2.position = w2.position, w1.position
@@ -125,23 +131,35 @@ class QuicksortWidget(QWidget):
         layout.removeWidget(w1)
         layout.removeWidget(w2)
 
+        assert layout.count() == self.number_of_elements - 2
+
         layout.insertWidget(w1.position, w1)
         layout.insertWidget(w2.position, w2)
+
+        assert layout.count() == self.number_of_elements
+
+        if log:
+            print("i end:", layout.indexOf(w1), layout.indexOf(w2))
+            print()
 
     def log(self, text: str):
         self.main_window.log.add_text(text)
 
     def pick_green_red(self, step: PickGreenRed):
-        self.layout_green_marker.takeAt(step.green_index).widget()
+        green = self.layout_green_marker.takeAt(step.green_index).widget()
         self.layout_green_marker.insertWidget(step.green_index, self.green_marker)
+        green.deleteLater()
 
-        self.layout_red_marker.takeAt(step.red_index).widget()
+        red = self.layout_red_marker.takeAt(step.red_index).widget()
         self.layout_red_marker.insertWidget(step.red_index, self.red_marker)
+        red.deleteLater()
+
         assert self.layout_green_marker.count() == self.number_of_elements
         assert self.layout_red_marker.count() == self.number_of_elements
         self.log(f"Green: {step.green_value} Red: {step.red_value}")
 
     def swap_markers(self, step: PickGreenRed):
+        self.layout_green_marker.log = True
         self.swap_widgets(
             self.layout_green_marker,
             self.green_marker,
@@ -155,8 +173,6 @@ class QuicksortWidget(QWidget):
             self.layout_red_marker.itemAt(step.red_index).widget(),
             log=True
         )
-        assert self.layout_red_marker.count() == self.number_of_elements
-        assert self.layout_green_marker.count() == self.number_of_elements
         self.log(f"Green: {step.green_value} Red: {step.red_value}")
 
     def green_less_eq_pivot(self, step: GreenLessEqPivot):
@@ -209,7 +225,7 @@ class QuicksortWidget(QWidget):
 
     def execute_next_step(self):
         step = self.steps.pop(0) if self.steps else None
-        print("Executing", step)
+        # print("Executing", step)
         match step:
             case Pivot():
                 if self.iteration == 1:
@@ -345,9 +361,6 @@ class QuicksortWidget(QWidget):
         self.fill_layout(
             self.layout_green_marker, GreenMarkerPlaceholder, self.number_of_elements
         )
-
-        self.green_marker = Marker("green", self.number_of_elements - 1)
-        self.red_marker = Marker("red", self.number_of_elements - 1)
 
         self.pivot_marker.position = 0
         self.green_marker.position = self.number_of_elements - 1

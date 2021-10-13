@@ -26,7 +26,7 @@ class LogWidget(QLabel):
         self.main_window.scroll_area_log.move_bottom()
 
 
-class Element(QWidget):
+class Element(QLabel):
     def __init__(
         self,
         quicksort_widget,
@@ -35,7 +35,8 @@ class Element(QWidget):
         parent_height: int,
         parent_width: int,
     ):
-        QWidget.__init__(self)
+
+        QLabel.__init__(self)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         self.quicksort_widget = quicksort_widget
         self.value = value
@@ -43,9 +44,12 @@ class Element(QWidget):
         self.number_of_elements = number_of_elements
         self.parent_height = parent_height
         self.parent_width = parent_width
+        self.setText(str(self.position))
+        self.setAlignment(Qt.AlignCenter | Qt.AlignBottom)
 
     def update_position(self, position: int):
         self.position = position
+        self.setText(str(self.position))
 
     @property
     def widget_width(self):
@@ -59,10 +63,10 @@ class Element(QWidget):
         return QSize(self.widget_width, self.widget_height)
 
     def paintEvent(self, event):
-        QWidget.paintEvent(self, event)
         qp = QPainter(self)
         rgb = self.quicksort_widget.colors[self.value - 1]
         qp.fillRect(QRect(0, 0, self.width(), self.height()), QColor(*rgb))
+        QLabel.paintEvent(self, event)
 
     def __repr__(self):
         return f"E({self.position=}, {self.value=})"
@@ -88,34 +92,73 @@ class Marker(QLabel):
         else:
             raise Exception("Unknown color")
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
-        self.position = position
+        self._position = position
+        self.setText(str(self._position))
 
     def __repr__(self):
         return f"Marker({self.color=}, {self.position=})"
+
+    def __del__(self):
+        print(f"Se borró {self}")
+
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, position):
+        self._position = position
+        self.setText(str(self._position))
 
 
 @dataclass
 class GreenMarkerPlaceholder(QLabel):
     def __init__(self, position: int):
         QLabel.__init__(self)
-        self.position = position
+        self._position = position
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         self.setStyleSheet("background: rgb(230, 230, 230);")
+        self.setText(str(self.position))
 
     def __repr__(self):
         return f"GreenMarkerPlaceholder({self.position=})"
+
+    def __del__(self):
+        print(f"Deleted {self}")
+
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, position):
+        self._position = position
+        self.setText(str(self._position))
 
 
 @dataclass
 class RedMarkerPlaceholder(QLabel):
     def __init__(self, position: int):
         QLabel.__init__(self)
-        self.position = position
+        self._position = position
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
         self.setStyleSheet("background: rgb(230, 230, 230);")
+        self.setText(str(self._position))
+
+    @property
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self, position):
+        self._position = position
+        self.setText(str(self._position))
 
     def __repr__(self):
         return f"RedMarkerPlaceholder({self.position=})"
+
+    def __del__(self):
+        print(f"Deleted {self}")
 
 
 @dataclass
