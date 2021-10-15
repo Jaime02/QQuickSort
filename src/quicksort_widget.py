@@ -1,6 +1,6 @@
 from random import shuffle
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox
 
 from .widgets import (
@@ -267,6 +267,7 @@ class QuicksortWidget(QWidget):
             case _:
                 QMessageBox.about(self, "End of quicksort", "All element are sorted")
         self.main_window.scroll_area_log.move_bottom()
+        QTimer.singleShot(100, lambda: self.main_window.next_step_button.click())
 
     def quicksort(self, v: list, start: int, end: int):
         if start == end:
