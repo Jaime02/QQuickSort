@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import (
-    QWidget,
     QLabel,
     QSizePolicy,
     QScrollArea,
@@ -28,16 +27,15 @@ class LogWidget(QLabel):
 
 class Element(QLabel):
     def __init__(
-        self,
-        quicksort_widget,
-        value: int,
-        number_of_elements: int,
-        parent_height: int,
-        parent_width: int,
+            self,
+            quicksort_widget,
+            value: int,
+            number_of_elements: int,
+            parent_height: int,
+            parent_width: int,
     ):
 
         QLabel.__init__(self)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         self.quicksort_widget = quicksort_widget
         self.value = value
         self.position = value - 1  # This is true when the widgets are sorted
@@ -64,7 +62,41 @@ class Element(QLabel):
 
     def paintEvent(self, event):
         qp = QPainter(self)
-        rgb = self.quicksort_widget.colors[self.value - 1]
+
+        def spectral_color(w):
+            if w >= 380 and w < 440:
+                R = -(w - 440.) / (440. - 380.)
+                G = 0.0
+                B = 1.0
+            elif w >= 440 and w < 490:
+                R = 0.0
+                G = (w - 440.) / (490. - 440.)
+                B = 1.0
+            elif w >= 490 and w < 510:
+                R = 0.0
+                G = 1.0
+                B = -(w - 510.) / (510. - 490.)
+            elif w >= 510 and w < 580:
+                R = (w - 510.) / (580. - 510.)
+                G = 1.0
+                B = 0.0
+            elif w >= 580 and w < 645:
+                R = 1.0
+                G = -(w - 645.) / (645. - 580.)
+                B = 0.0
+            elif w >= 645 and w <= 780:
+                R = 1.0
+                G = 0.0
+                B = 0.0
+            else:
+                R = 0.0
+                G = 0.0
+                B = 0.0
+
+            return R*255, G*255, B*255
+
+        rgb = spectral_color(400 + 300*self.value / self.quicksort_widget.number_of_elements)
+
         qp.fillRect(QRect(0, 0, self.width(), self.height()), QColor(*rgb))
         QLabel.paintEvent(self, event)
         self.setText(f"{self.position} - {self.value}")
@@ -113,8 +145,8 @@ class GreenMarkerPlaceholder(QLabel):
     def __repr__(self):
         return f"GreenMarkerPlaceholder({self.position=})"
 
-    def __del__(self):
-        print(f"Deleted {self}")
+    # def __del__(self):
+    #     print(f"Deleted {self}")
 
 
 @dataclass

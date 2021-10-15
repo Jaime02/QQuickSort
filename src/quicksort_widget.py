@@ -71,8 +71,6 @@ class QuicksortWidget(QWidget):
         self.central_layout.addLayout(self.layout_green_marker)
         self.central_layout.addLayout(self.layout_red_marker)
 
-        self.colors = self.generate_gradient_rgbs(self.number_of_elements)
-
         self.values = [element.value for element in self.elements]
 
         self.pivot_marker = PivotMarker(0)
@@ -102,16 +100,20 @@ class QuicksortWidget(QWidget):
         self.log(f"Pivot: {self.layout_bars.itemAt(step.index).widget().value}")
 
     def start(self):
-        self.main_window.log.clear()
-        self.log("--- Start ---")
-        self.main_window.next_step_button.setEnabled(True)
+        if self.main_window.start_button.text() == "Start"
+            self.main_window.log.clear()
+            self.main_window.start_button.setText("Stop")
+            self.log("--- Start ---")
+            self.main_window.next_step_button.setEnabled(True)
 
-        v = [element.value for element in self.elements]
-        self.values = [element.value for element in self.elements]
-        self.values = self.quicksort(v, 0, len(v)-1)
-        # from pprint import pprint
-        # pprint(self.steps)
-        self.execute_next_step()
+            v = [element.value for element in self.elements]
+            self.values = [element.value for element in self.elements]
+            self.values = self.quicksort(v, 0, len(v)-1)
+            # from pprint import pprint
+            # pprint(self.steps)
+            self.execute_next_step()
+        else:
+            self.stop_sorting()
 
     @staticmethod
     def swap_widgets(layout: QHBoxLayout | QVBoxLayout, w1, w2, log=False):
@@ -285,18 +287,6 @@ class QuicksortWidget(QWidget):
         self.quicksort(v, start, red-1)
         self.quicksort(v, red+1, end)
 
-    @staticmethod
-    def generate_gradient_rgbs(num_buckets):
-        rgb_codes = []
-        step_size = 1024 / num_buckets
-        for step in range(0, num_buckets):
-            red = int(max(0, 255 - (step_size * step * 0.5)))
-            # step size is half of the step size since both this item goes down and the next one goes up
-            blue = int(max(0, 255 - (step_size * 0.5 * (num_buckets - step - 1))))
-            green = (255 - red) if red else (255 - blue)
-            rgb_codes.append((red, green, blue))
-        return rgb_codes
-
     def resizeEvent(self, event):
         QWidget.resizeEvent(self, event)
         for element in self.elements:
@@ -325,6 +315,8 @@ class QuicksortWidget(QWidget):
             w = layout.takeAt(0)
 
     def create_elements(self):
+        self.empty_layout(self.layout_bars)
+
         self.elements = [
             Element(self, i, self.number_of_elements, self.height(), self.width())
             for i in range(1, self.number_of_elements + 1)
@@ -356,7 +348,9 @@ class QuicksortWidget(QWidget):
             self.layout_bars.addWidget(element, 1)
             self.layout_bars.setAlignment(element, Qt.AlignBottom)
 
-        self.colors = self.generate_gradient_rgbs(self.number_of_elements)
+    def stop_sorting(self):
+        self.layout_red_marker.replaceWidget(self.red_marker, RedMarkerPlaceholder(self.red_marker.position))
+        self.layout_green_marker.replaceWidget(self.green_marker, GreenMarkerPlaceholder(self.green_marker.position))
 
     def shuffle(self):
         self.main_window.log.clear()
