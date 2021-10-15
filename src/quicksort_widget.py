@@ -275,7 +275,7 @@ class QuicksortWidget(QWidget):
             return v
 
         pivot_value = v[start]
-        pivot_index = self.values.index(pivot_value)
+        pivot_index = v.index(pivot_value)
 
         self.steps.append(Pivot(pivot_index, pivot_value))
 

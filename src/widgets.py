@@ -42,7 +42,7 @@ class Element(QLabel):
         self.number_of_elements = number_of_elements
         self.parent_height = parent_height
         self.parent_width = parent_width
-        self.setText(f"{self.position} - {self.value}")
+        self.setText(f"{self.value}")
         self.setAlignment(Qt.AlignCenter | Qt.AlignBottom)
 
     def update_position(self, position: int):
@@ -100,7 +100,7 @@ class Element(QLabel):
 
         qp.fillRect(QRect(0, 0, self.width(), self.height()), QColor(*rgb))
         QLabel.paintEvent(self, event)
-        self.setText(f"{self.position} - {self.value}")
+        self.setText(f"{self.value}")
 
     def __repr__(self):
         return f"E({self.position=}, {self.value=})"
