@@ -27,12 +27,12 @@ class LogWidget(QLabel):
 
 class Element(QLabel):
     def __init__(
-            self,
-            quicksort_widget,
-            value: int,
-            number_of_elements: int,
-            parent_height: int,
-            parent_width: int,
+        self,
+        quicksort_widget,
+        value: int,
+        number_of_elements: int,
+        parent_height: int,
+        parent_width: int,
     ):
 
         QLabel.__init__(self)
@@ -49,42 +49,41 @@ class Element(QLabel):
         self.position = position
         self.setText(f"{self.position} - {self.value}")
 
-    @property
     def widget_width(self):
         return int(self.parent_width / self.number_of_elements)
 
-    @property
     def widget_height(self):
         return int(self.parent_height / self.number_of_elements * self.value)
 
     def sizeHint(self) -> QSize:
-        return QSize(self.widget_width, self.widget_height)
+        return QSize(self.widget_width(), self.widget_height())
 
     def paintEvent(self, event):
         qp = QPainter(self)
 
+        # From https://stackoverflow.com/a/3407960/11760835
         def spectral_color(w):
-            if w >= 380 and w < 440:
-                R = -(w - 440.) / (440. - 380.)
+            if 380 <= w < 440:
+                R = -(w - 440.0) / (440.0 - 380.0)
                 G = 0.0
                 B = 1.0
-            elif w >= 440 and w < 490:
+            elif 440 <= w < 490:
                 R = 0.0
-                G = (w - 440.) / (490. - 440.)
+                G = (w - 440.0) / (490.0 - 440.0)
                 B = 1.0
-            elif w >= 490 and w < 510:
+            elif 490 <= w < 510:
                 R = 0.0
                 G = 1.0
-                B = -(w - 510.) / (510. - 490.)
-            elif w >= 510 and w < 580:
-                R = (w - 510.) / (580. - 510.)
+                B = -(w - 510.0) / (510.0 - 490.0)
+            elif 510 <= w < 580:
+                R = (w - 510.0) / (580.0 - 510.0)
                 G = 1.0
                 B = 0.0
-            elif w >= 580 and w < 645:
+            elif 580 <= w < 645:
                 R = 1.0
-                G = -(w - 645.) / (645. - 580.)
+                G = -(w - 645.0) / (645.0 - 580.0)
                 B = 0.0
-            elif w >= 645 and w <= 780:
+            elif 645 <= w <= 780:
                 R = 1.0
                 G = 0.0
                 B = 0.0
@@ -93,9 +92,11 @@ class Element(QLabel):
                 G = 0.0
                 B = 0.0
 
-            return R*255, G*255, B*255
+            return R * 255, G * 255, B * 255
 
-        rgb = spectral_color(400 + 300*self.value / self.quicksort_widget.number_of_elements)
+        rgb = spectral_color(
+            400 + 250 * self.value / self.quicksort_widget.number_of_elements
+        )
 
         qp.fillRect(QRect(0, 0, self.width(), self.height()), QColor(*rgb))
         QLabel.paintEvent(self, event)

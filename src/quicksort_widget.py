@@ -52,7 +52,12 @@ class QuicksortWidget(QWidget):
         self.markers_placed = False
 
         self.elements = [
-            Element(self, i, self.number_of_elements, self.height(), self.width())
+            Element(self,
+                    value=i,
+                    number_of_elements=self.number_of_elements,
+                    parent_height=self.height(),
+                    parent_width=self.width()
+                    )
             for i in range(1, self.number_of_elements + 1)
         ]
         self.steps = []
@@ -81,6 +86,7 @@ class QuicksortWidget(QWidget):
 
     def mark_pivot(self, step: Pivot):
         # todo calculate pivot position
+        self.pivot_marker = PivotMarker(0)
         ph = self.layout_pivot_marker.takeAt(0)
         self.layout_pivot_marker.removeWidget(ph.widget())
         ph.widget().deleteLater()
@@ -103,29 +109,36 @@ class QuicksortWidget(QWidget):
         if self.main_window.start_button.text() == "Start":
             self.main_window.log.clear()
             self.main_window.start_button.setText("Stop")
+            self.main_window.shuffle_button.setDisabled(True)
             self.log("--- Start ---")
             self.main_window.next_step_button.setEnabled(True)
 
             v = [element.value for element in self.elements]
             self.values = [element.value for element in self.elements]
-            self.values = self.quicksort(v, 0, len(v)-1)
+            self.steps = []
+            self.values = self.quicksort(v, 0, len(v) - 1)
             # from pprint import pprint
             # pprint(self.steps)
             self.execute_next_step()
         else:
             self.stop_sorting()
+            self.main_window.start_button.setText("Start")
+            self.log("--- Stop ---")
+            self.main_window.next_step_button.setDisabled(True)
+            self.main_window.shuffle_button.setEnabled(True)
+            self.iteration = 1
 
     @staticmethod
-    def swap_widgets(layout: QHBoxLayout | QVBoxLayout, w1, w2, log=False):
+    def swap_widgets(layout: QHBoxLayout | QVBoxLayout, w1, w2, log=False, align=None):
         if w1 == w2:
             return
 
-        if log:
-            # print("Layout ", layout, ":")
-            # for i in range(layout.count()):
-            #     print(layout.itemAt(i).widget())
-            print("i start:", layout.indexOf(w1), layout.indexOf(w2))
-            print("w pos:", w1.position, w2.position)
+        # if log:
+        #     print("Layout ", layout, ":")
+        #     for i in range(layout.count()):
+        #         print(layout.itemAt(i).widget())
+        #     print("i start:", layout.indexOf(w1), layout.indexOf(w2))
+        #     print("w pos:", w1.position, w2.position)
 
         w1.position, w2.position = w2.position, w1.position
 
@@ -136,12 +149,20 @@ class QuicksortWidget(QWidget):
 
         widgets.sort(key=lambda w: w.position)
         for w in widgets:
-            layout.addWidget(w, 1)
+            if align:
+                layout.addWidget(w, 1, align)
+            else:
+                layout.addWidget(w, 1)
 
     def log(self, text: str):
         self.main_window.log.add_text(text)
 
     def pick_green_red(self, step: PickGreenRed):
+        if self.green_marker is None:
+            self.green_marker = Marker("green", self.number_of_elements - 1)
+        if self.red_marker is None:
+            self.red_marker = Marker("red", self.number_of_elements - 1)
+
         green = self.layout_green_marker.takeAt(step.green_index).widget()
         self.layout_green_marker.insertWidget(step.green_index, self.green_marker, 1)
         green.deleteLater()
@@ -201,7 +222,7 @@ class QuicksortWidget(QWidget):
             self.layout_bars,
             self.layout_bars.itemAt(self.green_marker.position).widget(),
             self.layout_bars.itemAt(self.red_marker.position).widget(),
-            log=True
+            align=Qt.AlignBottom
         )
         self.log(f"Swapping green <-> red: {step.green_value} <-> {step.red_value}")
 
@@ -210,6 +231,7 @@ class QuicksortWidget(QWidget):
             self.layout_bars,
             self.layout_bars.itemAt(step.pivot_index).widget(),
             self.layout_bars.itemAt(self.red_marker.position).widget(),
+            align=Qt.AlignBottom
         )
 
         self.log(f"Swapping pivot <-> red: {step.pivot_value} <-> {step.red_value}")
@@ -249,7 +271,7 @@ class QuicksortWidget(QWidget):
     def quicksort(self, v: list, start: int, end: int):
         if start == end:
             return []
-        elif start == end+1:
+        elif start == end + 1:
             return v
 
         pivot_value = v[start]
@@ -284,8 +306,8 @@ class QuicksortWidget(QWidget):
         self.steps.append(SwapPivotRed(pivot_index, pivot_value, red, v[red]))
         v[start], v[red] = v[red], v[start]
 
-        self.quicksort(v, start, red-1)
-        self.quicksort(v, red+1, end)
+        self.quicksort(v, start, red - 1)
+        self.quicksort(v, red + 1, end)
 
     def resizeEvent(self, event):
         QWidget.resizeEvent(self, event)
@@ -318,7 +340,12 @@ class QuicksortWidget(QWidget):
         self.empty_layout(self.layout_bars)
 
         self.elements = [
-            Element(self, i, self.number_of_elements, self.height(), self.width())
+            Element(self,
+                    value=i,
+                    number_of_elements=self.number_of_elements,
+                    parent_height=self.height(),
+                    parent_width=self.width()
+                    )
             for i in range(1, self.number_of_elements + 1)
         ]
 
@@ -349,8 +376,23 @@ class QuicksortWidget(QWidget):
             self.layout_bars.setAlignment(element, Qt.AlignBottom)
 
     def stop_sorting(self):
-        self.layout_red_marker.replaceWidget(self.red_marker, RedMarkerPlaceholder(self.red_marker.position))
-        self.layout_green_marker.replaceWidget(self.green_marker, GreenMarkerPlaceholder(self.green_marker.position))
+        if self.red_marker:
+            self.layout_red_marker.replaceWidget(self.red_marker, RedMarkerPlaceholder(self.red_marker.position))
+            self.red_marker.deleteLater()
+            self.red_marker = None
+
+        if self.green_marker:
+            self.layout_green_marker.replaceWidget(self.green_marker,
+                                                   GreenMarkerPlaceholder(self.green_marker.position))
+            self.green_marker.deleteLater()
+            self.green_marker = None
+
+        self.markers_placed = False
+
+        if self.pivot_marker:
+            self.layout_pivot_marker.replaceWidget(self.pivot_marker, PivotPlaceholder(self.pivot_marker.position))
+            self.pivot_marker.deleteLater()
+            self.pivot_marker = None
 
     def shuffle(self):
         self.main_window.log.clear()
