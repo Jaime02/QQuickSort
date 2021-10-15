@@ -100,7 +100,7 @@ class QuicksortWidget(QWidget):
         self.log(f"Pivot: {self.layout_bars.itemAt(step.index).widget().value}")
 
     def start(self):
-        if self.main_window.start_button.text() == "Start"
+        if self.main_window.start_button.text() == "Start":
             self.main_window.log.clear()
             self.main_window.start_button.setText("Stop")
             self.log("--- Start ---")
