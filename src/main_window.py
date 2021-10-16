@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QSpinBox,
-    QSplitter,
+    QSplitter, QCheckBox,
 )
 
 from .quicksort_widget import QuicksortWidget
@@ -68,6 +68,11 @@ class MainWindow(QMainWindow):
         self.speed_spinbox.setRange(1, 5000)
         self.buttons_layout.addWidget(self.speed_spinbox)
 
+        self.element_label_checkbox = QCheckBox("Show element value")
+        self.element_label_checkbox.setChecked(True)
+        self.element_label_checkbox.stateChanged.connect(self.empty_element_values)
+        self.buttons_layout.addWidget(self.element_label_checkbox)
+
         self.splitter = QSplitter()
         self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setStyleSheet(
@@ -80,7 +85,7 @@ class MainWindow(QMainWindow):
         self.splitter.addWidget(self.quicksort_widget)
 
         self.shuffle_button.clicked.connect(self.quicksort_widget.shuffle)
-        self.start_button.clicked.connect(self.quicksort_widget.start)
+        self.start_button.clicked.connect(self.quicksort_widget.start_stop)
         self.next_step_button.clicked.connect(self.quicksort_widget.execute_next_step)
         self.auto_button.clicked.connect(self.quicksort_widget.run_auto)
 
@@ -104,3 +109,14 @@ class MainWindow(QMainWindow):
         )
         self.quicksort_widget.number_of_elements = self.array_size_spinbox.value()
         self.quicksort_widget.create_elements()
+
+    def empty_element_values(self):
+        widgets = [self.quicksort_widget.layout_bars.itemAt(i).widget()
+                   for i in range(self.quicksort_widget.layout_bars.count())]
+
+        if not self.element_label_checkbox.isChecked():
+            for w in widgets:
+                w.setText("")
+        else:
+            for w in widgets:
+                w.update()

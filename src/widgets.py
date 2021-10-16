@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from PySide6.QtCore import QRect, QSize, Qt
+from PySide6.QtCore import QRect, QSize, Qt, QTimer
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import (
     QLabel,
@@ -9,20 +9,22 @@ from PySide6.QtWidgets import (
 )
 
 
-class LogWidget(QLabel):
-    def __init__(self, main_window):
+class RangeMarker(QLabel):
+    def __init__(self, layout_width: int, num_elements: int, start: int, end: int):
         QLabel.__init__(self)
-        self.setTextInteractionFlags(
-            Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard
-        )
-        self.main_window = main_window
+        self.layout_width = layout_width
+        self.num_elements = num_elements
+        self.start = start
+        self.end = end
 
-    def add_text(self, text: str):
-        if self.text():
-            self.setText(self.text() + "\n" + text)
-        else:
-            self.setText(text)
-        self.main_window.scroll_area_log.move_bottom()
+    def paintEvent(self, event):
+        QLabel.paintEvent(self, event)
+        qp = QPainter(self)
+
+        offset_width = self.layout_width // self.num_elements * self.start
+        width = self.layout_width / self.num_elements * (self.end - self.start + 1)
+
+        qp.fillRect(QRect(offset_width, 0, int(width), self.height()), QColor(0, 0, 0))
 
 
 class Element(QLabel):
@@ -42,7 +44,7 @@ class Element(QLabel):
         self.number_of_elements = number_of_elements
         self.parent_height = parent_height
         self.parent_width = parent_width
-        self.setText(f"{self.value}")
+        # self.setText(f"{self.value}")
         self.setAlignment(Qt.AlignCenter | Qt.AlignBottom)
 
     def update_position(self, position: int):
@@ -100,7 +102,8 @@ class Element(QLabel):
 
         qp.fillRect(QRect(0, 0, self.width(), self.height()), QColor(*rgb))
         QLabel.paintEvent(self, event)
-        self.setText(f"{self.value}")
+        if self.parent().main_window.element_label_checkbox.isChecked():
+            self.setText(f"{self.value}")
 
     def __repr__(self):
         return f"E({self.position=}, {self.value=})"
@@ -181,6 +184,8 @@ class PivotPlaceholder(QLabel):
 class Pivot:
     index: int
     value: int
+    start: int
+    end: int
 
 
 @dataclass
@@ -241,6 +246,20 @@ class ScrollAreaBottom(QScrollArea):
     def move_bottom(self):
         self.verticalScrollBar().setValue(self.verticalScrollBar().maximum())
 
-    def resizeEvent(self, event):
-        QScrollArea.resizeEvent(self, event)
-        self.move_bottom()
+
+class LogWidget(QLabel):
+    def __init__(self, main_window):
+        QLabel.__init__(self)
+        self.setTextInteractionFlags(
+            Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard
+        )
+        self.main_window = main_window
+
+    def add_text(self, text: str):
+        if self.text():
+            self.setText(self.text() + "\n" + text)
+        else:
+            self.setText(text)
+
+        # It seems that scrolling cant be done instantly, otherwise last line is not seen
+        QTimer.singleShot(1, lambda: self.main_window.scroll_area_log.move_bottom())
