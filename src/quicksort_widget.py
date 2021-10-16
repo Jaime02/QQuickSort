@@ -1,7 +1,8 @@
 from random import shuffle
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QMessageBox
+from PySide6.QtCore import Qt, QTimer, QByteArray
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PySide6.QtMultimedia import *
 
 from .widgets import (
     Element,
@@ -46,10 +47,11 @@ class QuicksortWidget(QWidget):
     def __init__(self, main_window):
         QWidget.__init__(self)
         self.main_window = main_window
-        self.number_of_elements = 5
-        self.old_number_of_elements = 5
+        self.number_of_elements = 6
+        self.old_number_of_elements = 6
         self.iteration = 1
         self.markers_placed = False
+        self.sorted = False
 
         self.elements = [
             Element(self,
@@ -112,6 +114,7 @@ class QuicksortWidget(QWidget):
             self.main_window.shuffle_button.setDisabled(True)
             self.log("--- Start ---")
             self.main_window.next_step_button.setEnabled(True)
+            self.main_window.auto_button.setEnabled(True)
 
             v = [element.value for element in self.elements]
             self.values = [element.value for element in self.elements]
@@ -125,6 +128,7 @@ class QuicksortWidget(QWidget):
             self.main_window.start_button.setText("Start")
             self.log("--- Stop ---")
             self.main_window.next_step_button.setDisabled(True)
+            self.main_window.auto_button.setDisabled(True)
             self.main_window.shuffle_button.setEnabled(True)
             self.iteration = 1
 
@@ -237,7 +241,11 @@ class QuicksortWidget(QWidget):
         self.log(f"Swapping pivot <-> red: {step.pivot_value} <-> {step.red_value}")
 
     def execute_next_step(self):
-        step = self.steps.pop(0) if self.steps else None
+        if self.steps:
+            step = self.steps.pop(0)
+        else:
+            self.sorted = True
+            return
         # print("Executing", step)
         match step:
             case Pivot():
@@ -264,10 +272,15 @@ class QuicksortWidget(QWidget):
                 self.decrease_green_marker()
             case DecreaseRed():
                 self.decrease_red_marker()
-            case _:
-                QMessageBox.about(self, "End of quicksort", "All element are sorted")
         self.main_window.scroll_area_log.move_bottom()
-        QTimer.singleShot(100, lambda: self.main_window.next_step_button.click())
+
+    def play_noise(self):
+        pass
+
+    def run_auto(self):
+        if not self.sorted:
+            self.execute_next_step()
+            QTimer.singleShot(self.main_window.speed_spinbox.value(), lambda: self.run_auto())
 
     def quicksort(self, v: list, start: int, end: int):
         if start == end:
@@ -396,6 +409,8 @@ class QuicksortWidget(QWidget):
             self.pivot_marker = None
 
     def shuffle(self):
+        self.sorted = False
+
         self.main_window.log.clear()
 
         new_positions = list(range(self.number_of_elements))

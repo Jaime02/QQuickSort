@@ -35,7 +35,8 @@ class MainWindow(QMainWindow):
 
         self.array_size_spinbox = QSpinBox()
         self.array_size_spinbox.setRange(2, 60)
-        self.array_size_spinbox.setValue(5)
+        self.array_size_spinbox.setValue(6)
+        self.array_size_spinbox.setMinimumWidth(40)
         self.array_size_layout.addWidget(self.array_size_spinbox)
 
         self.update_size_button = QPushButton("Update")
@@ -55,6 +56,18 @@ class MainWindow(QMainWindow):
         self.next_step_button.setDisabled(True)
         self.buttons_layout.addWidget(self.next_step_button)
 
+        self.auto_button = QPushButton("Automatic mode")
+        self.auto_button.setDisabled(True)
+        self.buttons_layout.addWidget(self.auto_button)
+
+        period_label = QLabel("Period:")
+        period_label.setAlignment(Qt.AlignCenter)
+        self.buttons_layout.addWidget(period_label)
+
+        self.speed_spinbox = QSpinBox()
+        self.speed_spinbox.setRange(1, 5000)
+        self.buttons_layout.addWidget(self.speed_spinbox)
+
         self.splitter = QSplitter()
         self.splitter.setOrientation(Qt.Vertical)
         self.splitter.setStyleSheet(
@@ -69,6 +82,7 @@ class MainWindow(QMainWindow):
         self.shuffle_button.clicked.connect(self.quicksort_widget.shuffle)
         self.start_button.clicked.connect(self.quicksort_widget.start)
         self.next_step_button.clicked.connect(self.quicksort_widget.execute_next_step)
+        self.auto_button.clicked.connect(self.quicksort_widget.run_auto)
 
         self.scroll_area_log = ScrollAreaBottom()
         self.log = LogWidget(self)
